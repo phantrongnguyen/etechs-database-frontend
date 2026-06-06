@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Wallet Asset Meta</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .form-card {
+            background: rgba(255,255,255,0.07);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 2rem;
+        }
+        .page-title {
+            color: #fff;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(100,100,255,0.3);
+        }
+        .page-desc {
+            color: rgba(255,255,255,0.55);
+        }
+        .form-label {
+            color: rgba(255,255,255,0.85);
+            font-weight: 500;
+        }
+        .form-control, .form-select {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(255,255,255,0.12);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.25);
+            color: #fff;
+        }
+        .form-control::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+        .section-title {
+            color: #8ab4f8;
+            font-weight: 600;
+            margin-top: 1.8rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 50px;
+            padding: 10px 32px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(102,126,234,0.4);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.7);
+            border-radius: 50px;
+            padding: 10px 32px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.18);
+            color: #fff;
+        }
+        .form-check-label {
+            color: rgba(255,255,255,0.8);
+        }
+        .form-check-input {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="form-card">
+                    <h1 class="page-title">💎 Wallet Asset Meta</h1>
+                    <p class="page-desc">Chuẩn hóa thông tin tài sản số</p>
+
+                    <form action="/normalize/wallet-asset-meta" method="post" class="mt-4">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="assetId" class="form-label">Asset ID <span style="color:#ff6b6b;">*</span></label>
+                                <input type="text" class="form-control" id="assetId" name="assetId"
+                                       value="ASSET-001" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="displayName" class="form-label">Display Name <span style="color:#ff6b6b;">*</span></label>
+                                <input type="text" class="form-control" id="displayName" name="displayName"
+                                       value="Gold Coin" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="iconUrl" class="form-label">Icon URL <span style="color:#ff6b6b;">*</span></label>
+                            <input type="url" class="form-control" id="iconUrl" name="iconUrl"
+                                   value="https://example.com/gold.png" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="2">A shiny gold coin earned from assessment</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="earnedAt" class="form-label">Earned At <span style="color:#ff6b6b;">*</span></label>
+                            <input type="text" class="form-control" id="earnedAt" name="earnedAt"
+                                   value="2026-06-06T12:00:00Z" required>
+                        </div>
+
+                        <h5 class="section-title">📦 Source</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="sourceRefType" class="form-label">Ref Type <span style="color:#ff6b6b;">*</span></label>
+                                <input type="text" class="form-control" id="sourceRefType" name="sourceRefType"
+                                       value="assessment" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="sourceRefId" class="form-label">Ref ID <span style="color:#ff6b6b;">*</span></label>
+                                <input type="text" class="form-control" id="sourceRefId" name="sourceRefId"
+                                       value="ASM-123" required>
+                            </div>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input type="checkbox" class="form-check-input" id="isTradable" name="isTradable" value="true" checked>
+                            <label class="form-check-label" for="isTradable">Is Tradable</label>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-primary">Normalize</button>
+                            <a href="/" class="btn btn-secondary">Back</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
