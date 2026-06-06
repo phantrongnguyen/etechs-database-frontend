@@ -1,0 +1,23 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Environment
+.env
+
+# Models
+*.pkl
+*.h5
+
+# Data
+data/raw/
+data/processed/
+
+# Java
+target/
+
+# IDE
+.idea/
+.vscode/
