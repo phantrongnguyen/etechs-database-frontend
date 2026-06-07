@@ -2,6 +2,8 @@ from typing import Dict, Any, Optional
 # Import trực tiếp các Model từ thư mục models vừa tách
 from .models.wallet_asset_meta import WalletAssetMetaModel
 from .models.wallet_transaction_meta import WalletTransactionMetaModel
+from .models.student_profile_meta import StudentProfileMetaModel
+from .models.education_meta import EducationMetaModel
 
 
 def _trim_strings(data: Any) -> Any:
@@ -25,6 +27,10 @@ def normalize_data(collection_name: str, raw_data: Dict[str, Any]) -> Optional[D
             validated_model = WalletAssetMetaModel(**cleaned)
         elif collection_name == "wallet_transaction_meta":
             validated_model = WalletTransactionMetaModel(**cleaned)
+        elif collection_name == "student_profile_meta":
+            validated_model = StudentProfileMetaModel(**cleaned)
+        elif collection_name == "education_meta":
+            validated_model = EducationMetaModel(**cleaned)
         else:
             print(f"⚠️ Collection '{collection_name}' chưa được cấu hình Model.")
             return None
@@ -33,4 +39,4 @@ def normalize_data(collection_name: str, raw_data: Dict[str, Any]) -> Optional[D
     
     except Exception as e:
         print(f"❌ LỖI CHUẨN HÓA trên [{collection_name}]: {e}")
-        return None
+        return None

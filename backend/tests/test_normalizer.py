@@ -96,3 +96,114 @@ def test_wallet_transaction_meta_negative_balance():
     
     cleaned = normalize_data("wallet_transaction_meta", raw_negative_data)
     assert cleaned is None  # Phải chặn đứng do vi phạm điều kiện số tiền >= 0
+
+
+# =====================================================================
+# THỬ NGHIỆM BẢNG: student_profile_meta
+# =====================================================================
+
+def test_student_profile_meta_valid():
+    """Kiểm thử thông tin profile hợp lệ: Trimming chuỗi, ép kiểu boolean, parse ngày tháng"""
+    raw_data = {
+        "profile_id": "   PROFILE_KT_001   ",
+        "display_preferences": {
+            "theme": "   dark   ",
+            "language": "vi",
+            "timezone": "Asia/Ho_Chi_Minh"
+        },
+        "privacy_settings": {
+            "show_avatar": "public",
+            "show_bio": "   friends_only   ",
+            "show_interests": "private"
+        },
+        "onboarding": {
+            "is_completed": "True",
+            "steps_done": ["  step_1  ", "step_2"],
+            "last_step_at": "2026-06-07T12:00:00Z"
+        },
+        "tags": ["   active   ", "premium"],
+        "ai_summary": "   Học sinh chăm chỉ.   ",
+        "ai_summary_at": "2026-06-07T18:00:00Z"
+    }
+
+    cleaned = normalize_data("student_profile_meta", raw_data)
+
+    assert cleaned is not None
+    assert cleaned["profile_id"] == "PROFILE_KT_001"
+    assert cleaned["display_preferences"]["theme"] == "dark"
+    assert cleaned["privacy_settings"]["show_bio"] == "friends_only"
+    assert cleaned["onboarding"]["is_completed"] is True
+    assert cleaned["onboarding"]["steps_done"] == ["step_1", "step_2"]
+    assert isinstance(cleaned["onboarding"]["last_step_at"], datetime)
+    assert cleaned["tags"] == ["active", "premium"]
+    assert cleaned["ai_summary"] == "Học sinh chăm chỉ."
+    assert isinstance(cleaned["ai_summary_at"], datetime)
+
+
+def test_student_profile_meta_invalid_privacy_enum():
+    """Kiểm thử giá trị enum privacy_settings sai quy định"""
+    raw_bad_data = {
+        "profile_id": "PROFILE_KT_001",
+        "privacy_settings": {
+            "show_avatar": "everybody"  # Không hợp lệ (chỉ chấp nhận public, friends_only, private)
+        }
+    }
+
+    cleaned = normalize_data("student_profile_meta", raw_bad_data)
+    assert cleaned is None
+
+
+def test_student_profile_meta_missing_required():
+    """Kiểm thử thiếu profile_id bắt buộc"""
+    raw_bad_data = {
+        "display_preferences": {"theme": "dark"}
+    }
+
+    cleaned = normalize_data("student_profile_meta", raw_bad_data)
+    assert cleaned is None
+
+
+# =====================================================================
+# THỬ NGHIỆM BẢNG: education_meta
+# =====================================================================
+
+def test_education_meta_valid():
+    """Kiểm thử thông tin học vấn hợp lệ: Trimming, chuẩn hóa enum, parse ngày tháng"""
+    raw_data = {
+        "education_id": "   EDU_KT_999   ",
+        "description": "   Trường THPT Chuyên Lê Hồng Phong   ",
+        "achievements": ["   Giải Nhì   ", "Học sinh giỏi"],
+        "document_urls": ["https://storage.etechs.vn/diploma/edu_kt_999.pdf"],
+        "verification_status": "   VERIFIED   ",  # In hoa và có khoảng trắng
+        "verified_at": "2026-06-08T00:00:00Z"
+    }
+
+    cleaned = normalize_data("education_meta", raw_data)
+
+    assert cleaned is not None
+    assert cleaned["education_id"] == "EDU_KT_999"
+    assert cleaned["description"] == "Trường THPT Chuyên Lê Hồng Phong"
+    assert cleaned["achievements"] == ["Giải Nhì", "Học sinh giỏi"]
+    assert cleaned["verification_status"] == "verified"  # Tự động về chữ thường
+    assert isinstance(cleaned["verified_at"], datetime)
+
+
+def test_education_meta_invalid_status_enum():
+    """Kiểm thử verification_status sai giá trị enum quy định"""
+    raw_bad_data = {
+        "education_id": "EDU_KT_999",
+        "verification_status": "approved"  # Sai enum (chỉ chấp nhận pending, verified, rejected)
+    }
+
+    cleaned = normalize_data("education_meta", raw_bad_data)
+    assert cleaned is None
+
+
+def test_education_meta_missing_required():
+    """Kiểm thử thiếu education_id bắt buộc"""
+    raw_bad_data = {
+        "verification_status": "pending"
+    }
+
+    cleaned = normalize_data("education_meta", raw_bad_data)
+    assert cleaned is None
