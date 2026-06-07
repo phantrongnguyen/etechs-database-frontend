@@ -32,6 +32,13 @@ Hệ thống chuẩn hóa dữ liệu đầu vào cho các collection MongoDB s�
 
 ---
 
+## Demo quá trình chuẩn hóa 
+![Mô tả ảnh 1](docs/image.png)
+
+![Mô tả ảnh 2](docs/image_001.png)
+
+---
+
 ## Cấu trúc thư mục
 
 ```
