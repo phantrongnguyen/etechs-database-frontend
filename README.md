@@ -67,7 +67,7 @@ etechs/
 ### 1. Clone dự án
 
 ```bash
-git clone <your-repo-url>
+git clone git@github.com:phantrongnguyen/etechs-database-frontend.git
 cd etechs
 ```
 
