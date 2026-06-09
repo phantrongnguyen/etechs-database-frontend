@@ -10,6 +10,7 @@ charset-normalizer==3.4.7
 click==8.4.1
 colorama==0.4.6
 fastapi==0.136.3
+motor==3.7.0
 gitdb==4.0.12
 GitPython==3.1.50
 h11==0.16.0
