@@ -183,7 +183,11 @@ if collection == "wallet_asset_meta":
                 resp = requests.post(f"{API_URL}/normalize/wallet_asset_meta", json=payload)
             if resp.ok:
                 data = resp.json()
-                st.success("Thành công!")
+                _id = data.pop("_id", None)
+                if _id:
+                    st.success(f"✅ Đã chuẩn hóa & lưu vào MongoDB (_id: `{_id}`)")
+                else:
+                    st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
 
                 tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
                 with tab1:
@@ -226,7 +230,11 @@ else:
                 resp = requests.post(f"{API_URL}/normalize/wallet_transaction_meta", json=payload)
             if resp.ok:
                 data = resp.json()
-                st.success("Thành công!")
+                _id = data.pop("_id", None)
+                if _id:
+                    st.success(f"✅ Đã chuẩn hóa & lưu vào MongoDB (_id: `{_id}`)")
+                else:
+                    st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
 
                 tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
                 with tab1:
