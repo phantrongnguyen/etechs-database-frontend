@@ -5,6 +5,30 @@ from datetime import datetime
 API_URL = "http://localhost:8000"
 
 MODEL_SCHEMAS = {
+    "wallet_meta": {
+        "fields": {
+            "wallets_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
+            "wallet_label": {"type": "str", "required": False},
+            "spending_summary": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "total_earned": {"type": "int", "required": False},
+                    "total_spent": {"type": "int", "required": False},
+                    "last_tx_at": {"type": "datetime (ISO)", "required": False},
+                },
+            },
+            "auto_topup": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "enabled": {"type": "bool", "required": False},
+                    "threshold": {"type": "int", "required": False},
+                    "amount": {"type": "int", "required": False},
+                },
+            },
+        }
+    },
     "wallet_asset_meta": {
         "fields": {
             "asset_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
@@ -41,6 +65,30 @@ MODEL_SCHEMAS = {
                 },
             },
             "receipt_url": {"type": "str | null", "required": False},
+        }
+    },
+    "wallet_meta": {
+        "fields": {
+            "wallets_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
+            "wallet_label": {"type": "str | null", "required": False, "note": "Mặc định: Ví chính"},
+            "spending_summary": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "total_earned": {"type": "int", "required": False},
+                    "total_spent": {"type": "int", "required": False},
+                    "last_tx_at": {"type": "datetime (ISO)", "required": False},
+                },
+            },
+            "auto_topup": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "enabled": {"type": "bool", "required": False},
+                    "threshold": {"type": "int", "required": False},
+                    "amount": {"type": "int", "required": False},
+                },
+            },
         }
     },
 }
@@ -133,7 +181,7 @@ st.title("ETechs Data Normalizer")
 
 collection = st.selectbox(
     "Chọn loại dữ liệu",
-    ["wallet_asset_meta", "wallet_transaction_meta"],
+    ["wallet_asset_meta", "wallet_transaction_meta", "wallet_meta"],
 )
 
 schema = MODEL_SCHEMAS[collection]
@@ -197,7 +245,7 @@ if collection == "wallet_asset_meta":
             else:
                 st.error(f"Lỗi {resp.status_code}: {resp.text}")
 
-else:
+elif collection == "wallet_transaction_meta":
     with st.form("tx_form"):
         st.subheader("Wallet Transaction Meta")
 
@@ -228,6 +276,66 @@ else:
             }
             with st.spinner("Đang chuẩn hóa..."):
                 resp = requests.post(f"{API_URL}/normalize/wallet_transaction_meta", json=payload)
+            if resp.ok:
+                data = resp.json()
+                _id = data.pop("_id", None)
+                if _id:
+                    st.success(f"✅ Đã chuẩn hóa & lưu vào MongoDB (_id: `{_id}`)")
+                else:
+                    st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
+
+                tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
+                with tab1:
+                    st.json(data)
+                with tab2:
+                    _render_schema(schema, data)
+            else:
+                st.error(f"Lỗi {resp.status_code}: {resp.text}")
+
+else:
+    with st.form("wallet_meta_form"):
+        st.subheader("Wallet Meta")
+
+        wallets_id = st.text_input("wallets_id *", "   WALLET_123   ")
+        wallet_label = st.text_input("wallet_label", "  Ví chính  ")
+
+        st.subheader("Spending Summary")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            total_earned = st.number_input("total_earned", value=100000, step=1)
+        with col2:
+            total_spent = st.number_input("total_spent", value=50000, step=1)
+        with col3:
+            last_tx_at = st.text_input("last_tx_at", "2026-06-06T17:00:00Z")
+
+        st.subheader("Auto Topup")
+        col4, col5, col6 = st.columns(3)
+        with col4:
+            enabled = st.checkbox("enabled", value=True)
+        with col5:
+            threshold = st.number_input("threshold", value=10000, step=1)
+        with col6:
+            amount = st.number_input("amount", value=50000, step=1)
+
+        submitted = st.form_submit_button("Gửi & Chuẩn hóa")
+
+        if submitted:
+            payload = {
+                "wallets_id": wallets_id,
+                "wallet_label": wallet_label if wallet_label else None,
+                "spending_summary": {
+                    "total_earned": int(total_earned),
+                    "total_spent": int(total_spent),
+                    "last_tx_at": last_tx_at if last_tx_at else None,
+                },
+                "auto_topup": {
+                    "enabled": enabled,
+                    "threshold": int(threshold) if threshold > 0 else None,
+                    "amount": int(amount) if amount > 0 else None,
+                },
+            }
+            with st.spinner("Đang chuẩn hóa..."):
+                resp = requests.post(f"{API_URL}/normalize/wallet_meta", json=payload)
             if resp.ok:
                 data = resp.json()
                 _id = data.pop("_id", None)
