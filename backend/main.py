@@ -7,6 +7,7 @@ from database import connect_db, close_db, get_db
 from middleware.repositories.wallet_repo import (
     insert_asset_meta,
     insert_transaction_meta,
+    insert_wallet_meta
 )
 
 
@@ -59,6 +60,18 @@ async def normalize_wallet_transaction_meta(raw_data: Dict[str, Any]):
     try:
         db = get_db()
         inserted_id = await insert_transaction_meta(db, result)
+        return {**result, "_id": inserted_id}
+    except RuntimeError:
+        return result
+
+@app.post("/normalize/wallet_meta")
+async def normalize_wallet_meta(raw_data: Dict[str, Any]):
+    result = normalize_data("wallet_meta", raw_data)
+    if result is None:
+        raise HTTPException(status_code=422, detail="Validation failed")
+    try:
+        db = get_db()
+        inserted_id = await insert_wallet_meta(db, result)
         return {**result, "_id": inserted_id}
     except RuntimeError:
         return result
