@@ -1,7 +1,9 @@
 from typing import Dict, Any, Optional
-# Import trực tiếp các Model từ thư mục models vừa tách
+from pydantic import ValidationError 
+
 from .models.wallet_asset_meta import WalletAssetMetaModel
 from .models.wallet_transaction_meta import WalletTransactionMetaModel
+from .models.wallet_meta import WalletMeta
 
 
 def _trim_strings(data: Any) -> Any:
@@ -25,12 +27,25 @@ def normalize_data(collection_name: str, raw_data: Dict[str, Any]) -> Optional[D
             validated_model = WalletAssetMetaModel(**cleaned)
         elif collection_name == "wallet_transaction_meta":
             validated_model = WalletTransactionMetaModel(**cleaned)
+        elif collection_name == "wallet_meta":
+            validated_model = WalletMeta(**cleaned)
         else:
             print(f"⚠️ Collection '{collection_name}' chưa được cấu hình Model.")
             return None
         
         return validated_model.model_dump()
     
+    except ValidationError as e:
+        # Bóc tách chi tiết từng trường bị lỗi từ Pydantic
+        print(f"\n❌ LỖI CHUẨN HÓA DỮ LIỆU trên [{collection_name}]:")
+        for error in e.errors():
+            field_path = " -> ".join(str(loc) for loc in error['loc'])
+            
+            error_msg = error['msg'].replace("Value error, ", "")
+            
+            print(f"⚠️ Trường [{field_path}]: {error_msg}")
+        return None
+        
     except Exception as e:
-        print(f"❌ LỖI CHUẨN HÓA trên [{collection_name}]: {e}")
+        print(f"❌ LỖI HỆ THỐNG KHÔNG XÁC ĐỊNH trên [{collection_name}]: {e}")
         return None
