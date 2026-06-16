@@ -2,7 +2,7 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator 
 from datetime import datetime 
 
-class SpendingSumary(BaseModel):
+class SpendingSummary(BaseModel):
     total_earned: Optional[int] = 0
     total_spent: Optional[int] = 0
     last_tx_at: Optional[datetime] = None
@@ -33,7 +33,7 @@ class AutoTopup(BaseModel):
 class WalletMeta(BaseModel):
     wallets_id: str = Field(..., min_length=1, max_length=16)
     wallet_label: Optional[str] = "Ví chính"
-    spending_summary: SpendingSumary = Field(default_factory=SpendingSumary)
+    spending_summary: SpendingSummary = Field(default_factory=SpendingSummary)
     auto_topup: AutoTopup = Field(default_factory=AutoTopup)
     
     @field_validator("wallets_id")
