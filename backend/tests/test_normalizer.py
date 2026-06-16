@@ -2,6 +2,36 @@ import pytest
 from datetime import datetime
 from middleware.normalizer import normalize_data
 
+
+# =====================================================================
+# THỬ NGHIỆM BẢNG 4: wallet_meta
+# =====================================================================
+
+def test_wallet_meta_valid():
+    """Kiểm thử dữ liệu hợp lệ: Phải chuẩn hóa thành công và làm sạch chuỗi"""
+    raw_data = {
+        "wallets_id": "   WALLET_123   ",  # Khoảng trắng thừa
+        "wallet_label": "  Ví phụ  ",
+        "spending_summary": {
+            "total_earned": 100000,
+            "total_spent": 50000,
+            "last_tx_at": "2026-06-06T17:00:00Z"
+        },
+        "auto_topup": {
+            "enabled": True,
+            "threshold": 10000,
+            "amount": 50000
+        }
+    }
+    
+    cleaned = normalize_data("wallet_meta", raw_data)
+    
+    assert cleaned is not None
+    assert cleaned["wallets_id"] == "WALLET_123"          # Đã trim khoảng trắng
+    assert cleaned["wallet_label"] == "Ví phụ"           # Đã trim khoảng trắng
+    assert isinstance(cleaned["spending_summary"]["last_tx_at"], datetime)  # Đã ép sang kiểu ngày tháng
+    assert cleaned["auto_topup"]["enabled"] is True      # Đã giữ nguyên kiểu Boolean
+
 # =====================================================================
 # THỬ NGHIỆM BẢNG 5: wallet_asset_meta
 # =====================================================================
