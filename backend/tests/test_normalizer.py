@@ -126,3 +126,70 @@ def test_wallet_transaction_meta_negative_balance():
     
     cleaned = normalize_data("wallet_transaction_meta", raw_negative_data)
     assert cleaned is None  # Phải chặn đứng do vi phạm điều kiện số tiền >= 0
+
+
+# =====================================================================
+# THỬ NGHIỆM BẢNG 3: identity_meta
+# =====================================================================
+
+def test_identity_meta_valid():
+    """Kiểm thử dữ liệu hợp lệ cho identity_meta: Trim chuỗi, gán mặc định"""
+    raw_data = {
+        "indentity_id": "   ID_DOC_777   ",
+        "scan_urls": [
+            "  https://storage.cloud.com/docs/front.jpg  ",
+            "https://storage.cloud.com/docs/back.jpg"
+        ],
+        "ocr_extracted": {
+            "full_name": "Nguyen Van A",
+            "dob": "1999-01-01"
+        },
+        "verification_status": "  VERIFIED  ",
+        "review_note": "   Giấy tờ hợp lệ   "
+    }
+
+    cleaned = normalize_data("identity_meta", raw_data)
+
+    assert cleaned is not None
+    assert cleaned["indentity_id"] == "ID_DOC_777"
+    assert cleaned["scan_urls"][0] == "https://storage.cloud.com/docs/front.jpg"
+    assert cleaned["ocr_extracted"]["full_name"] == "Nguyen Van A"
+    assert cleaned["verification_status"] == "verified"
+    assert cleaned["review_note"] == "Giấy tờ hợp lệ"
+
+
+def test_identity_meta_defaults():
+    """Kiểm thử giá trị mặc định của identity_meta khi không truyền trường tùy chọn"""
+    raw_data = {
+        "indentity_id": "ID_DOC_888"
+    }
+
+    cleaned = normalize_data("identity_meta", raw_data)
+
+    assert cleaned is not None
+    assert cleaned["indentity_id"] == "ID_DOC_888"
+    assert cleaned["scan_urls"] == []
+    assert cleaned["ocr_extracted"] == {}
+    assert cleaned["verification_status"] == "pending"
+    assert cleaned["review_note"] is None
+
+
+def test_identity_meta_invalid_status():
+    """Kiểm thử vi phạm enum của verification_status"""
+    raw_data = {
+        "indentity_id": "ID_DOC_888",
+        "verification_status": "approved"  # Không nằm trong: pending, verified, rejected
+    }
+
+    cleaned = normalize_data("identity_meta", raw_data)
+    assert cleaned is None
+
+
+def test_identity_meta_missing_required():
+    """Kiểm thử thiếu trường indentity_id"""
+    raw_data = {
+        "verification_status": "verified"
+    }
+
+    cleaned = normalize_data("identity_meta", raw_data)
+    assert cleaned is None
