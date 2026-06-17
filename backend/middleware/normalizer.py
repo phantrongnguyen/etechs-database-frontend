@@ -4,6 +4,8 @@ from pydantic import ValidationError
 from .models.wallet_asset_meta import WalletAssetMetaModel
 from .models.wallet_transaction_meta import WalletTransactionMetaModel
 from .models.wallet_meta import WalletMeta
+from .models.identity_meta import IdentityMetaModel
+
 
 
 def _trim_strings(data: Any) -> Any:
@@ -29,6 +31,8 @@ def normalize_data(collection_name: str, raw_data: Dict[str, Any]) -> Optional[D
             validated_model = WalletTransactionMetaModel(**cleaned)
         elif collection_name == "wallet_meta":
             validated_model = WalletMeta(**cleaned)
+        elif collection_name == "identity_meta":
+            validated_model = IdentityMetaModel(**cleaned)
         else:
             print(f"⚠️ Collection '{collection_name}' chưa được cấu hình Model.")
             return None
