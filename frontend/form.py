@@ -8,7 +8,7 @@ MODEL_SCHEMAS = {
     "wallet_meta": {
         "fields": {
             "wallets_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
-            "wallet_label": {"type": "str", "required": False},
+            "wallet_label": {"type": "str | null", "required": False, "note": "Mặc định: Ví chính"},
             "spending_summary": {
                 "type": "object",
                 "required": False,
@@ -67,28 +67,21 @@ MODEL_SCHEMAS = {
             "receipt_url": {"type": "str | null", "required": False},
         }
     },
-    "wallet_meta": {
+    "identity_meta": {
         "fields": {
-            "wallets_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
-            "wallet_label": {"type": "str | null", "required": False, "note": "Mặc định: Ví chính"},
-            "spending_summary": {
+            "indentity_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
+            "scan_urls": {"type": "array", "required": False, "note": "mảng URL ảnh"},
+            "ocr_extracted": {
                 "type": "object",
                 "required": False,
-                "fields": {
-                    "total_earned": {"type": "int", "required": False},
-                    "total_spent": {"type": "int", "required": False},
-                    "last_tx_at": {"type": "datetime (ISO)", "required": False},
-                },
+                "note": "full_name, dob, address...",
             },
-            "auto_topup": {
-                "type": "object",
+            "verification_status": {
+                "type": "enum",
                 "required": False,
-                "fields": {
-                    "enabled": {"type": "bool", "required": False},
-                    "threshold": {"type": "int", "required": False},
-                    "amount": {"type": "int", "required": False},
-                },
+                "note": "pending, verified, rejected",
             },
+            "review_note": {"type": "str | null", "required": False},
         }
     },
 }
@@ -181,7 +174,7 @@ st.title("ETechs Data Normalizer")
 
 collection = st.selectbox(
     "Chọn loại dữ liệu",
-    ["wallet_asset_meta", "wallet_transaction_meta", "wallet_meta"],
+    ["wallet_asset_meta", "wallet_transaction_meta", "wallet_meta", "identity_meta"],
 )
 
 schema = MODEL_SCHEMAS[collection]
@@ -228,7 +221,7 @@ if collection == "wallet_asset_meta":
                 "is_tradable": is_tradable,
             }
             with st.spinner("Đang chuẩn hóa..."):
-                resp = requests.post(f"{API_URL}/normalize/wallet_asset_meta", json=payload)
+                resp = requests.post(f"{API_URL}/normalize/wallet_asset_meta", json=payload, timeout=10)
             if resp.ok:
                 data = resp.json()
                 _id = data.pop("_id", None)
@@ -275,7 +268,7 @@ elif collection == "wallet_transaction_meta":
                 "receipt_url": receipt_url if receipt_url else None,
             }
             with st.spinner("Đang chuẩn hóa..."):
-                resp = requests.post(f"{API_URL}/normalize/wallet_transaction_meta", json=payload)
+                resp = requests.post(f"{API_URL}/normalize/wallet_transaction_meta", json=payload, timeout=10)
             if resp.ok:
                 data = resp.json()
                 _id = data.pop("_id", None)
@@ -292,7 +285,7 @@ elif collection == "wallet_transaction_meta":
             else:
                 st.error(f"Lỗi {resp.status_code}: {resp.text}")
 
-else:
+elif collection == "wallet_meta":
     with st.form("wallet_meta_form"):
         st.subheader("Wallet Meta")
 
@@ -335,7 +328,60 @@ else:
                 },
             }
             with st.spinner("Đang chuẩn hóa..."):
-                resp = requests.post(f"{API_URL}/normalize/wallet_meta", json=payload)
+                resp = requests.post(f"{API_URL}/normalize/wallet_meta", json=payload, timeout=10)
+            if resp.ok:
+                data = resp.json()
+                _id = data.pop("_id", None)
+                if _id:
+                    st.success(f"✅ Đã chuẩn hóa & lưu vào MongoDB (_id: `{_id}`)")
+                else:
+                    st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
+
+                tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
+                with tab1:
+                    st.json(data)
+                with tab2:
+                    _render_schema(schema, data)
+            else:
+                st.error(f"Lỗi {resp.status_code}: {resp.text}")
+
+else:
+    with st.form("identity_form"):
+        st.subheader("Identity Meta")
+
+        indentity_id = st.text_input("indentity_id *", value="   ID_DOC_777   ")
+        scan_urls_raw = st.text_input("scan_urls (phân cách bằng dấu phẩy)", value="https://storage.cloud.com/docs/front.jpg, https://storage.cloud.com/docs/back.jpg")
+        
+        st.subheader("OCR Extracted (JSON)")
+        ocr_extracted_raw = st.text_area("ocr_extracted (JSON format)", value='{\n  "full_name": "Nguyen Van A",\n  "dob": "1999-01-01",\n  "address": "123 Street"\n}')
+        
+        verification_status = st.selectbox("verification_status", ["pending", "verified", "rejected"])
+        review_note = st.text_input("review_note", "Giấy tờ hợp lệ")
+
+        submitted = st.form_submit_button("Gửi & Chuẩn hóa")
+
+        if submitted:
+            scan_urls = [url.strip() for url in scan_urls_raw.split(",") if url.strip()] if scan_urls_raw else []
+            
+            import json
+            try:
+                ocr_extracted = json.loads(ocr_extracted_raw) if ocr_extracted_raw else {}
+                if not isinstance(ocr_extracted, dict):
+                    st.error("ocr_extracted phải là một JSON Object (Dictionary)")
+                    ocr_extracted = {}
+            except json.JSONDecodeError:
+                st.error("Định dạng JSON của ocr_extracted không hợp lệ")
+                ocr_extracted = {}
+
+            payload = {
+                "indentity_id": indentity_id,
+                "scan_urls": scan_urls,
+                "ocr_extracted": ocr_extracted,
+                "verification_status": verification_status,
+                "review_note": review_note if review_note else None,
+            }
+            with st.spinner("Đang chuẩn hóa..."):
+                resp = requests.post(f"{API_URL}/normalize/identity_meta", json=payload, timeout=10)
             if resp.ok:
                 data = resp.json()
                 _id = data.pop("_id", None)
