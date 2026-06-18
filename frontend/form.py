@@ -84,6 +84,20 @@ MODEL_SCHEMAS = {
             "review_note": {"type": "str | null", "required": False},
         }
     },
+    "education_meta": {
+        "fields": {
+            "education_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
+            "description": {"type": "str | null", "required": False},
+            "achievements": {"type": "array", "required": False, "note": "mảng thành tích"},
+            "document_urls": {"type": "array", "required": False, "note": "mảng URL bằng cấp"},
+            "verification_status": {
+                "type": "enum",
+                "required": False,
+                "note": "pending, verified, rejected",
+            },
+            "verified_at": {"type": "datetime (ISO)", "required": False},
+        }
+    },
 }
 
 
@@ -174,7 +188,7 @@ st.title("ETechs Data Normalizer")
 
 collection = st.selectbox(
     "Chọn loại dữ liệu",
-    ["wallet_asset_meta", "wallet_transaction_meta", "wallet_meta", "identity_meta"],
+    ["wallet_asset_meta", "wallet_transaction_meta", "wallet_meta", "identity_meta", "education_meta"],
 )
 
 schema = MODEL_SCHEMAS[collection]
@@ -345,7 +359,7 @@ elif collection == "wallet_meta":
             else:
                 st.error(f"Lỗi {resp.status_code}: {resp.text}")
 
-else:
+elif collection == "identity_meta":
     with st.form("identity_form"):
         st.subheader("Identity Meta")
 
@@ -382,6 +396,49 @@ else:
             }
             with st.spinner("Đang chuẩn hóa..."):
                 resp = requests.post(f"{API_URL}/normalize/identity_meta", json=payload, timeout=10)
+            if resp.ok:
+                data = resp.json()
+                _id = data.pop("_id", None)
+                if _id:
+                    st.success(f"✅ Đã chuẩn hóa & lưu vào MongoDB (_id: `{_id}`)")
+                else:
+                    st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
+
+                tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
+                with tab1:
+                    st.json(data)
+                with tab2:
+                    _render_schema(schema, data)
+            else:
+                st.error(f"Lỗi {resp.status_code}: {resp.text}")
+
+elif collection == "education_meta":
+    with st.form("education_form"):
+        st.subheader("Education Meta")
+
+        education_id = st.text_input("education_id *", value="   EDU_MATH_123   ")
+        description = st.text_input("description", value="  Học sinh giỏi cấp thành phố môn Toán  ")
+        achievements_raw = st.text_input("achievements (phân cách bằng dấu phẩy)", value="Giải nhất Violympic, Học sinh xuất sắc")
+        document_urls_raw = st.text_input("document_urls (phân cách bằng dấu phẩy)", value="https://storage.cloud.com/docs/violympic.pdf, https://storage.cloud.com/docs/report_card.pdf")
+        verification_status = st.selectbox("verification_status", ["pending", "verified", "rejected"])
+        verified_at = st.text_input("verified_at", value="2026-06-18T12:00:00Z")
+
+        submitted = st.form_submit_button("Gửi & Chuẩn hóa")
+
+        if submitted:
+            achievements = [item.strip() for item in achievements_raw.split(",") if item.strip()] if achievements_raw else []
+            document_urls = [url.strip() for url in document_urls_raw.split(",") if url.strip()] if document_urls_raw else []
+
+            payload = {
+                "education_id": education_id,
+                "description": description if description else None,
+                "achievements": achievements,
+                "document_urls": document_urls,
+                "verification_status": verification_status,
+                "verified_at": verified_at if verified_at else None,
+            }
+            with st.spinner("Đang chuẩn hóa..."):
+                resp = requests.post(f"{API_URL}/normalize/education_meta", json=payload, timeout=10)
             if resp.ok:
                 data = resp.json()
                 _id = data.pop("_id", None)
