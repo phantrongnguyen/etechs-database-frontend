@@ -5,6 +5,7 @@ from .models.wallet_asset_meta import WalletAssetMetaModel
 from .models.wallet_transaction_meta import WalletTransactionMetaModel
 from .models.wallet_meta import WalletMeta
 from .models.identity_meta import IdentityMetaModel
+from .models.education_meta import EducationMetaModel
 
 
 
@@ -33,6 +34,8 @@ def normalize_data(collection_name: str, raw_data: Dict[str, Any]) -> Optional[D
             validated_model = WalletMeta(**cleaned)
         elif collection_name == "identity_meta":
             validated_model = IdentityMetaModel(**cleaned)
+        elif collection_name == "education_meta":
+            validated_model = EducationMetaModel(**cleaned)
         else:
             print(f"⚠️ Collection '{collection_name}' chưa được cấu hình Model.")
             return None
