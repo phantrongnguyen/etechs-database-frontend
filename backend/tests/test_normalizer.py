@@ -192,4 +192,77 @@ def test_identity_meta_missing_required():
     }
 
     cleaned = normalize_data("identity_meta", raw_data)
-    assert cleaned is None
+    assert cleaned is None
+
+
+# =====================================================================
+# THỬ NGHIỆM BẢNG 2: education_meta
+# =====================================================================
+
+def test_education_meta_valid():
+    """Kiểm thử dữ liệu hợp lệ cho education_meta: Trim chuỗi, làm sạch mảng và ép kiểu ngày tháng"""
+    raw_data = {
+        "education_id": "   EDU_MATH_123   ",
+        "description": "  Học sinh giỏi Toán  ",
+        "achievements": [
+            "  Giải nhất  ",
+            "   ",  # Sẽ bị loại bỏ do rỗng
+            "Huy chương Vàng"
+        ],
+        "document_urls": [
+            "https://storage.cloud.com/1.pdf",
+            "  "  # Sẽ bị loại bỏ do rỗng
+        ],
+        "verification_status": "  VERIFIED  ",
+        "verified_at": "2026-06-18T12:00:00Z"
+    }
+
+    cleaned = normalize_data("education_meta", raw_data)
+
+    assert cleaned is not None
+    assert cleaned["education_id"] == "EDU_MATH_123"
+    assert cleaned["description"] == "Học sinh giỏi Toán"
+    assert cleaned["achievements"] == ["Giải nhất", "Huy chương Vàng"]
+    assert cleaned["document_urls"] == ["https://storage.cloud.com/1.pdf"]
+    assert cleaned["verification_status"] == "verified"
+    assert isinstance(cleaned["verified_at"], datetime)
+
+
+def test_education_meta_defaults():
+    """Kiểm thử giá trị mặc định cho education_meta"""
+    raw_data = {
+        "education_id": "EDU_111"
+    }
+
+    cleaned = normalize_data("education_meta", raw_data)
+
+    assert cleaned is not None
+    assert cleaned["education_id"] == "EDU_111"
+    assert cleaned["description"] is None
+    assert cleaned["achievements"] == []
+    assert cleaned["document_urls"] == []
+    assert cleaned["verification_status"] == "pending"
+    assert cleaned["verified_at"] is None
+
+
+def test_education_meta_invalid_enum():
+    """Kiểm thử vi phạm enum cho verification_status"""
+    raw_data = {
+        "education_id": "EDU_111",
+        "verification_status": "approved"  # Không hợp lệ, phải thuộc: pending, verified, rejected
+    }
+
+    cleaned = normalize_data("education_meta", raw_data)
+    assert cleaned is None
+
+
+def test_education_meta_missing_required():
+    """Kiểm thử thiếu trường bắt buộc education_id"""
+    raw_data = {
+        "description": "Học sinh giỏi",
+        "verification_status": "verified"
+    }
+
+    cleaned = normalize_data("education_meta", raw_data)
+    assert cleaned is None
+
