@@ -19,8 +19,11 @@ Hệ thống chuẩn hóa dữ liệu đầu vào cho các collection **MongoDB*
 
 | Tính năng | Mô tả |
 |-----------|-------|
+| 📦 | Chuẩn hóa dữ liệu collection `wallet_meta` |
 | 📦 | Chuẩn hóa dữ liệu collection `wallet_asset_meta` |
 | 📦 | Chuẩn hóa dữ liệu collection `wallet_transaction_meta` |
+| 📦 | Chuẩn hóa dữ liệu collection `identity_meta` |
+| 📦 | Chuẩn hóa dữ liệu collection `education_meta` (Mới) |
 | ✂️ | Tự động trim khoảng trắng, chuẩn hóa chữ hoa/thường |
 | 📅 | Parse datetime từ chuỗi ISO format |
 | 🔄 | Ép kiểu Boolean từ string |
@@ -58,14 +61,21 @@ Hệ thống chuẩn hóa dữ liệu đầu vào cho các collection **MongoDB*
 etechs/
 ├── backend/
 │   ├── main.py                          # 📡 FastAPI app - định nghĩa endpoints
+│   ├── database.py                      # 🔌 Kết nối cơ sở dữ liệu MongoDB
 │   ├── requirements.txt                 # 📦 Danh sách dependencies
 │   ├── middleware/
 │   │   ├── __init__.py
 │   │   ├── normalizer.py                # 🔄 Hàm điều phối normalize_data()
-│   │   └── models/
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── wallet_meta.py           # 🧾 Pydantic model cho wallet_meta
+│   │   │   ├── wallet_asset_meta.py     # 🧾 Pydantic model cho wallet_asset_meta
+│   │   │   ├── wallet_transaction_meta.py # 🧾 Pydantic model cho wallet_transaction_meta
+│   │   │   ├── identity_meta.py         # 🧾 Pydantic model cho identity_meta
+│   │   │   └── education_meta.py        # 🧾 Pydantic model cho education_meta
+│   │   └── repositories/
 │   │       ├── __init__.py
-│   │       ├── wallet_asset_meta.py     # 🧾 Pydantic model cho wallet_asset_meta
-│   │       └── wallet_transaction_meta.py # 🧾 Pydantic model cho wallet_transaction_meta
+│   │       └── wallet_repo.py           # 🗄️ Repositories lưu MongoDB
 │   └── tests/
 │       ├── __init__.py
 │       └── test_normalizer.py           # 🧪 Unit tests
@@ -176,6 +186,18 @@ cd backend
 
 📦 Endpoint riêng cho collection `wallet_transaction_meta`.
 
+### `POST /normalize/wallet_meta`
+
+📦 Endpoint riêng cho collection `wallet_meta`.
+
+### `POST /normalize/identity_meta`
+
+📦 Endpoint riêng cho collection `identity_meta`.
+
+### `POST /normalize/education_meta`
+
+📦 Endpoint riêng cho collection `education_meta`.
+
 ---
 
 ## 🧪 Chạy kiểm thử
@@ -185,15 +207,24 @@ cd backend
 pytest tests\test_normalizer.py -v
 ```
 
-Kết quả mong đợi: **✅ 5 passed**
+Kết quả mong đợi: **✅ 14 passed**
 
 | Test case | Mục đích |
 |-----------|----------|
-| `test_wallet_asset_meta_valid` | ✅ Dữ liệu hợp lệ → trim string, parse datetime, ép boolean |
+| `test_wallet_meta_valid` | ✅ Chuẩn hóa và làm sạch thông tin ví |
+| `test_wallet_asset_meta_valid` | ✅ Dữ liệu tài sản hợp lệ → trim string, parse datetime, ép boolean |
 | `test_wallet_asset_meta_missing_required` | ❌ Thiếu trường bắt buộc → trả về None |
 | `test_wallet_transaction_meta_valid` | ✅ Ép kiểu số từ string, lowercasing |
 | `test_wallet_transaction_meta_invalid_enum` | ❌ triggered_by không hợp lệ → trả về None |
 | `test_wallet_transaction_meta_negative_balance` | ❌ Số dư âm → trả về None |
+| `test_identity_meta_valid` | ✅ Dữ liệu căn cước hợp lệ, trim chuỗi, gán giá trị mặc định |
+| `test_identity_meta_defaults` | ✅ Trả về giá trị mặc định khi thiếu trường tùy chọn |
+| `test_identity_meta_invalid_status` | ❌ Trạng thái xác minh không hợp lệ → trả về None |
+| `test_identity_meta_missing_required` | ❌ Thiếu trường bắt buộc indentity_id → trả về None |
+| `test_education_meta_valid` | ✅ Dữ liệu học vấn hợp lệ, trim chuỗi, làm sạch mảng |
+| `test_education_meta_defaults` | ✅ Trả về giá trị mặc định của bảng học vấn |
+| `test_education_meta_invalid_enum` | ❌ Trạng thái xác minh học vấn sai enum → trả về None |
+| `test_education_meta_missing_required` | ❌ Thiếu trường bắt buộc education_id → trả về None |
 
 ---
 
