@@ -23,3 +23,10 @@ async def insert_identity_meta(db: AsyncIOMotorDatabase, data: dict) -> str:
     result = await db["identity_meta"].insert_one(doc)
     return str(result.inserted_id)
 
+
+async def insert_education_meta(db: AsyncIOMotorDatabase, data: dict) -> str:
+    doc = {**data, "created_at": datetime.now(timezone.utc)}
+    result = await db["education_meta"].insert_one(doc)
+    return str(result.inserted_id)
+
+
