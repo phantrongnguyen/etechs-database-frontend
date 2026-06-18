@@ -8,7 +8,8 @@ from middleware.repositories.wallet_repo import (
     insert_asset_meta,
     insert_transaction_meta,
     insert_wallet_meta,
-    insert_identity_meta
+    insert_identity_meta,
+    insert_education_meta
 )
 
 
@@ -85,6 +86,18 @@ async def normalize_identity_meta(raw_data: Dict[str, Any]):
     try:
         db = get_db()
         inserted_id = await insert_identity_meta(db, result)
+        return {**result, "_id": inserted_id}
+    except RuntimeError:
+        return result
+
+@app.post("/normalize/education_meta")
+async def normalize_education_meta(raw_data: Dict[str, Any]):
+    result = normalize_data("education_meta", raw_data)
+    if result is None:
+        raise HTTPException(status_code=422, detail="Validation failed")
+    try:
+        db = get_db()
+        inserted_id = await insert_education_meta(db, result)
         return {**result, "_id": inserted_id}
     except RuntimeError:
         return result
