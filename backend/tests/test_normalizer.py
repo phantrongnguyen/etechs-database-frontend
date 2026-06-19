@@ -265,4 +265,106 @@ def test_education_meta_missing_required():
 
     cleaned = normalize_data("education_meta", raw_data)
     assert cleaned is None
+
+
+# =====================================================================
+# THỬ NGHIỆM BẢNG 1: student_profile_meta
+# =====================================================================
+
+def test_student_profile_meta_valid():
+    """Kiểm thử dữ liệu hợp lệ cho student_profile_meta: Trim chuỗi, làm sạch mảng và ép kiểu ngày tháng"""
+    raw_data = {
+        "profile_id": "   PROF_STUDENT_99   ",
+        "display_preferences": {
+            "theme": "  dark  ",
+            "language": " vi ",
+            "timezone": " Asia/Ho_Chi_Minh "
+        },
+        "privacy_settings": {
+            "show_avatar": "  FRIENDS_ONLY  ",
+            "show_bio": "public",
+            "show_interests": "private"
+        },
+        "onboarding": {
+            "is_completed": "True",  # Ép boolean
+            "steps_done": [
+                "  intro  ",
+                "   ",  # Sẽ bị loại bỏ do rỗng
+                "upload_avatar"
+            ],
+            "last_step_at": "2026-06-19T10:00:00Z"
+        },
+        "tags": [
+            "  active  ",
+            "   ",  # Sẽ bị loại bỏ do rỗng
+            "premium"
+        ],
+        "ai_summary": "  Học sinh xuất sắc  ",
+        "ai_summary_at": "2026-06-19 10:00:00"
+    }
+
+    cleaned = normalize_data("student_profile_meta", raw_data)
+
+    assert cleaned is not None
+    assert cleaned["profile_id"] == "PROF_STUDENT_99"
+    assert cleaned["display_preferences"]["theme"] == "dark"
+    assert cleaned["display_preferences"]["language"] == "vi"
+    assert cleaned["display_preferences"]["timezone"] == "Asia/Ho_Chi_Minh"
+    assert cleaned["privacy_settings"]["show_avatar"] == "friends_only"
+    assert cleaned["privacy_settings"]["show_bio"] == "public"
+    assert cleaned["privacy_settings"]["show_interests"] == "private"
+    assert cleaned["onboarding"]["is_completed"] is True
+    assert cleaned["onboarding"]["steps_done"] == ["intro", "upload_avatar"]
+    assert isinstance(cleaned["onboarding"]["last_step_at"], datetime)
+    assert cleaned["tags"] == ["active", "premium"]
+    assert cleaned["ai_summary"] == "Học sinh xuất sắc"
+    assert isinstance(cleaned["ai_summary_at"], datetime)
+
+
+def test_student_profile_meta_defaults():
+    """Kiểm thử giá trị mặc định cho student_profile_meta"""
+    raw_data = {
+        "profile_id": "PROF_111"
+    }
+
+    cleaned = normalize_data("student_profile_meta", raw_data)
+
+    assert cleaned is not None
+    assert cleaned["profile_id"] == "PROF_111"
+    assert cleaned["display_preferences"]["theme"] is None
+    assert cleaned["privacy_settings"]["show_avatar"] == "public"
+    assert cleaned["privacy_settings"]["show_bio"] == "public"
+    assert cleaned["privacy_settings"]["show_interests"] == "public"
+    assert cleaned["onboarding"]["is_completed"] is False
+    assert cleaned["onboarding"]["steps_done"] == []
+    assert cleaned["onboarding"]["last_step_at"] is None
+    assert cleaned["tags"] == []
+    assert cleaned["ai_summary"] is None
+    assert cleaned["ai_summary_at"] is None
+
+
+def test_student_profile_meta_invalid_privacy():
+    """Kiểm thử vi phạm enum cho privacy_settings"""
+    raw_data = {
+        "profile_id": "PROF_111",
+        "privacy_settings": {
+            "show_avatar": "only_me"  # Không hợp lệ, phải thuộc: public, friends_only, private
+        }
+    }
+
+    cleaned = normalize_data("student_profile_meta", raw_data)
+    assert cleaned is None
+
+
+def test_student_profile_meta_missing_required():
+    """Kiểm thử thiếu trường bắt buộc profile_id"""
+    raw_data = {
+        "display_preferences": {
+            "theme": "dark"
+        }
+    }
+
+    cleaned = normalize_data("student_profile_meta", raw_data)
+    assert cleaned is None
+
 
