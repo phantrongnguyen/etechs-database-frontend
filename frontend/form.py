@@ -98,6 +98,41 @@ MODEL_SCHEMAS = {
             "verified_at": {"type": "datetime (ISO)", "required": False},
         }
     },
+    "student_profile_meta": {
+        "fields": {
+            "profile_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
+            "display_preferences": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "theme": {"type": "str", "required": False},
+                    "language": {"type": "str", "required": False},
+                    "timezone": {"type": "str", "required": False},
+                },
+            },
+            "privacy_settings": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "show_avatar": {"type": "enum", "required": False, "note": "public, friends_only, private"},
+                    "show_bio": {"type": "enum", "required": False, "note": "public, friends_only, private"},
+                    "show_interests": {"type": "enum", "required": False, "note": "public, friends_only, private"},
+                },
+            },
+            "onboarding": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "is_completed": {"type": "bool", "required": False},
+                    "steps_done": {"type": "array", "required": False},
+                    "last_step_at": {"type": "datetime (ISO)", "required": False},
+                },
+            },
+            "tags": {"type": "array", "required": False, "note": "mảng nhãn hệ thống"},
+            "ai_summary": {"type": "str | null", "required": False},
+            "ai_summary_at": {"type": "datetime (ISO)", "required": False},
+        }
+    },
 }
 
 
@@ -188,7 +223,7 @@ st.title("ETechs Data Normalizer")
 
 collection = st.selectbox(
     "Chọn loại dữ liệu",
-    ["wallet_asset_meta", "wallet_transaction_meta", "wallet_meta", "identity_meta", "education_meta"],
+    ["wallet_asset_meta", "wallet_transaction_meta", "wallet_meta", "identity_meta", "education_meta", "student_profile_meta"],
 )
 
 schema = MODEL_SCHEMAS[collection]
@@ -439,6 +474,88 @@ elif collection == "education_meta":
             }
             with st.spinner("Đang chuẩn hóa..."):
                 resp = requests.post(f"{API_URL}/normalize/education_meta", json=payload, timeout=10)
+            if resp.ok:
+                data = resp.json()
+                _id = data.pop("_id", None)
+                if _id:
+                    st.success(f"✅ Đã chuẩn hóa & lưu vào MongoDB (_id: `{_id}`)")
+                else:
+                    st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
+
+                tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
+                with tab1:
+                    st.json(data)
+                with tab2:
+                    _render_schema(schema, data)
+            else:
+                st.error(f"Lỗi {resp.status_code}: {resp.text}")
+
+else:
+    with st.form("profile_form"):
+        st.subheader("Student Profile Meta")
+
+        profile_id = st.text_input("profile_id *", value="   PROF_STUDENT_99   ")
+
+        st.subheader("Display Preferences")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            theme = st.text_input("theme", value="dark")
+        with col2:
+            language = st.text_input("language", value="vi")
+        with col3:
+            timezone = st.text_input("timezone", value="Asia/Ho_Chi_Minh")
+
+        st.subheader("Privacy Settings")
+        col4, col5, col6 = st.columns(3)
+        with col4:
+            show_avatar = st.selectbox("show_avatar", ["public", "friends_only", "private"])
+        with col5:
+            show_bio = st.selectbox("show_bio", ["public", "friends_only", "private"])
+        with col6:
+            show_interests = st.selectbox("show_interests", ["public", "friends_only", "private"])
+
+        st.subheader("Onboarding")
+        col7, col8 = st.columns(2)
+        with col7:
+            is_completed = st.checkbox("is_completed", value=True)
+            last_step_at = st.text_input("last_step_at", value="2026-06-19T10:00:00Z")
+        with col8:
+            steps_done_raw = st.text_input("steps_done (phân cách bằng dấu phẩy)", value="intro, upload_avatar, fill_info")
+
+        st.subheader("Others")
+        tags_raw = st.text_input("tags (phân cách bằng dấu phẩy)", value="active, premium")
+        ai_summary = st.text_input("ai_summary", value="Học sinh có thành tích tốt môn Toán học")
+        ai_summary_at = st.text_input("ai_summary_at", value="2026-06-19T10:00:00Z")
+
+        submitted = st.form_submit_button("Gửi & Chuẩn hóa")
+
+        if submitted:
+            steps_done = [item.strip() for item in steps_done_raw.split(",") if item.strip()] if steps_done_raw else []
+            tags = [item.strip() for item in tags_raw.split(",") if item.strip()] if tags_raw else []
+
+            payload = {
+                "profile_id": profile_id,
+                "display_preferences": {
+                    "theme": theme if theme else None,
+                    "language": language if language else None,
+                    "timezone": timezone if timezone else None,
+                },
+                "privacy_settings": {
+                    "show_avatar": show_avatar,
+                    "show_bio": show_bio,
+                    "show_interests": show_interests,
+                },
+                "onboarding": {
+                    "is_completed": is_completed,
+                    "steps_done": steps_done,
+                    "last_step_at": last_step_at if last_step_at else None,
+                },
+                "tags": tags,
+                "ai_summary": ai_summary if ai_summary else None,
+                "ai_summary_at": ai_summary_at if ai_summary_at else None,
+            }
+            with st.spinner("Đang chuẩn hóa..."):
+                resp = requests.post(f"{API_URL}/normalize/student_profile_meta", json=payload, timeout=10)
             if resp.ok:
                 data = resp.json()
                 _id = data.pop("_id", None)
