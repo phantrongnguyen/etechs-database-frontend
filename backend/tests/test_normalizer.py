@@ -367,4 +367,71 @@ def test_student_profile_meta_missing_required():
     cleaned = normalize_data("student_profile_meta", raw_data)
     assert cleaned is None
 
+
+# =====================================================================
+# THỬ NGHIỆM BẢNG 7: user_interest_meta
+# =====================================================================
+
+def test_user_interest_meta_valid():
+    """Kiểm thử dữ liệu hợp lệ cho user_interest_meta: Trim chuỗi, dọn dẹp mảng và ép kiểu số, ngày tháng"""
+    raw_data = {
+        "interest_id": "   INT_READING_88   ",
+        "raw_input": "  Tôi thích đọc sách  ",
+        "ai_tags": [
+            "  đọc sách  ",
+            "   ",  # Sẽ bị loại bỏ do rỗng
+            "giải trí"
+        ],
+        "ai_processed_at": "2026-06-19 11:00:00",
+        "mapping_attempts": "3"  # Sẽ ép sang kiểu số nguyên int
+    }
+
+    cleaned = normalize_data("user_interest_meta", raw_data)
+
+    assert cleaned is not None
+    assert cleaned["interest_id"] == "INT_READING_88"
+    assert cleaned["raw_input"] == "Tôi thích đọc sách"
+    assert cleaned["ai_tags"] == ["đọc sách", "giải trí"]
+    assert isinstance(cleaned["ai_processed_at"], datetime)
+    assert cleaned["mapping_attempts"] == 3
+    assert isinstance(cleaned["mapping_attempts"], int)
+
+
+def test_user_interest_meta_defaults():
+    """Kiểm thử giá trị mặc định cho user_interest_meta"""
+    raw_data = {
+        "interest_id": "INT_111"
+    }
+
+    cleaned = normalize_data("user_interest_meta", raw_data)
+
+    assert cleaned is not None
+    assert cleaned["interest_id"] == "INT_111"
+    assert cleaned["raw_input"] is None
+    assert cleaned["ai_tags"] == []
+    assert cleaned["ai_processed_at"] is None
+    assert cleaned["mapping_attempts"] == 0
+
+
+def test_user_interest_meta_invalid_attempts():
+    """Kiểm thử vi phạm ràng buộc số lần mapping không âm"""
+    raw_data = {
+        "interest_id": "INT_111",
+        "mapping_attempts": -1  # Số âm không hợp lệ
+    }
+
+    cleaned = normalize_data("user_interest_meta", raw_data)
+    assert cleaned is None
+
+
+def test_user_interest_meta_missing_required():
+    """Kiểm thử thiếu trường bắt buộc interest_id"""
+    raw_data = {
+        "raw_input": "Đọc sách"
+    }
+
+    cleaned = normalize_data("user_interest_meta", raw_data)
+    assert cleaned is None
+
+
 

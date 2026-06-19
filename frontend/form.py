@@ -133,6 +133,15 @@ MODEL_SCHEMAS = {
             "ai_summary_at": {"type": "datetime (ISO)", "required": False},
         }
     },
+    "user_interest_meta": {
+        "fields": {
+            "interest_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
+            "raw_input": {"type": "str | null", "required": False},
+            "ai_tags": {"type": "array", "required": False, "note": "mảng nhãn AI qua NLP"},
+            "ai_processed_at": {"type": "datetime (ISO)", "required": False},
+            "mapping_attempts": {"type": "int", "required": False, "note": "mặc định: 0, >= 0"},
+        }
+    },
 }
 
 
@@ -223,7 +232,7 @@ st.title("ETechs Data Normalizer")
 
 collection = st.selectbox(
     "Chọn loại dữ liệu",
-    ["wallet_asset_meta", "wallet_transaction_meta", "wallet_meta", "identity_meta", "education_meta", "student_profile_meta"],
+    ["wallet_asset_meta", "wallet_transaction_meta", "wallet_meta", "identity_meta", "education_meta", "student_profile_meta", "user_interest_meta"],
 )
 
 schema = MODEL_SCHEMAS[collection]
@@ -490,7 +499,7 @@ elif collection == "education_meta":
             else:
                 st.error(f"Lỗi {resp.status_code}: {resp.text}")
 
-else:
+elif collection == "student_profile_meta":
     with st.form("profile_form"):
         st.subheader("Student Profile Meta")
 
@@ -556,6 +565,46 @@ else:
             }
             with st.spinner("Đang chuẩn hóa..."):
                 resp = requests.post(f"{API_URL}/normalize/student_profile_meta", json=payload, timeout=10)
+            if resp.ok:
+                data = resp.json()
+                _id = data.pop("_id", None)
+                if _id:
+                    st.success(f"✅ Đã chuẩn hóa & lưu vào MongoDB (_id: `{_id}`)")
+                else:
+                    st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
+
+                tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
+                with tab1:
+                    st.json(data)
+                with tab2:
+                    _render_schema(schema, data)
+            else:
+                st.error(f"Lỗi {resp.status_code}: {resp.text}")
+
+else:
+    with st.form("interest_form"):
+        st.subheader("User Interest Meta")
+
+        interest_id = st.text_input("interest_id *", value="   INT_READING_88   ")
+        raw_input = st.text_input("raw_input", value="  Tôi thích đọc sách trinh thám  ")
+        ai_tags_raw = st.text_input("ai_tags (phân cách bằng dấu phẩy)", value="đọc sách, trinh thám, giải trí")
+        ai_processed_at = st.text_input("ai_processed_at", value="2026-06-19T11:00:00Z")
+        mapping_attempts = st.number_input("mapping_attempts", value=0, min_value=0, step=1)
+
+        submitted = st.form_submit_button("Gửi & Chuẩn hóa")
+
+        if submitted:
+            ai_tags = [item.strip() for item in ai_tags_raw.split(",") if item.strip()] if ai_tags_raw else []
+
+            payload = {
+                "interest_id": interest_id,
+                "raw_input": raw_input if raw_input else None,
+                "ai_tags": ai_tags,
+                "ai_processed_at": ai_processed_at if ai_processed_at else None,
+                "mapping_attempts": int(mapping_attempts),
+            }
+            with st.spinner("Đang chuẩn hóa..."):
+                resp = requests.post(f"{API_URL}/normalize/user_interest_meta", json=payload, timeout=10)
             if resp.ok:
                 data = resp.json()
                 _id = data.pop("_id", None)

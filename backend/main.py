@@ -10,7 +10,8 @@ from middleware.repositories.wallet_repo import (
     insert_wallet_meta,
     insert_identity_meta,
     insert_education_meta,
-    insert_student_profile_meta
+    insert_student_profile_meta,
+    insert_user_interest_meta
 )
 
 
@@ -111,6 +112,18 @@ async def normalize_student_profile_meta(raw_data: Dict[str, Any]):
     try:
         db = get_db()
         inserted_id = await insert_student_profile_meta(db, result)
+        return {**result, "_id": inserted_id}
+    except RuntimeError:
+        return result
+
+@app.post("/normalize/user_interest_meta")
+async def normalize_user_interest_meta(raw_data: Dict[str, Any]):
+    result = normalize_data("user_interest_meta", raw_data)
+    if result is None:
+        raise HTTPException(status_code=422, detail="Validation failed")
+    try:
+        db = get_db()
+        inserted_id = await insert_user_interest_meta(db, result)
         return {**result, "_id": inserted_id}
     except RuntimeError:
         return result
