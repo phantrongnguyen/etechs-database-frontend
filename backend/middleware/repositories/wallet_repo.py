@@ -30,3 +30,10 @@ async def insert_education_meta(db: AsyncIOMotorDatabase, data: dict) -> str:
     return str(result.inserted_id)
 
 
+async def insert_student_profile_meta(db: AsyncIOMotorDatabase, data: dict) -> str:
+    doc = {**data, "created_at": datetime.now(timezone.utc)}
+    result = await db["student_profile_meta"].insert_one(doc)
+    return str(result.inserted_id)
+
+
+
