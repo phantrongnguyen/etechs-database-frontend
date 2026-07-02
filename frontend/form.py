@@ -142,6 +142,112 @@ MODEL_SCHEMAS = {
             "mapping_attempts": {"type": "int", "required": False, "note": "mặc định: 0, >= 0"},
         }
     },
+    "post_meta": {
+        "fields": {
+            "post_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
+            "rich_content": {"type": "str | null", "required": False},
+            "media": {"type": "array", "required": False, "note": "mảng {type, url, order}"},
+            "tags": {"type": "array", "required": False, "note": "mảng hashtag"},
+            "stats_cache": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "like_count": {"type": "int", "required": False},
+                    "comment_count": {"type": "int", "required": False},
+                    "share_count": {"type": "int", "required": False},
+                    "cached_at": {"type": "datetime (ISO)", "required": False},
+                }
+            },
+            "moderation": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "status": {"type": "enum", "required": False, "note": "approved, hidden, removed"},
+                    "reviewed_by": {"type": "str | null", "required": False},
+                    "reviewed_at": {"type": "datetime (ISO)", "required": False},
+                }
+            }
+        }
+    },
+    "comment_meta": {
+        "fields": {
+            "comment_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
+            "rich_content": {"type": "str | null", "required": False},
+            "media": {"type": "array", "required": False, "note": "mảng {type, url}"},
+            "stats_cache": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "like_count": {"type": "int", "required": False},
+                    "reply_count": {"type": "int", "required": False},
+                    "cached_at": {"type": "datetime (ISO)", "required": False},
+                }
+            },
+            "edit_history": {"type": "array", "required": False, "note": "mảng {content, edited_at}"},
+            "moderation": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "status": {"type": "enum", "required": False, "note": "approved, hidden, removed"},
+                    "reviewed_by": {"type": "str | null", "required": False},
+                    "reviewed_at": {"type": "datetime (ISO)", "required": False},
+                }
+            }
+        }
+    },
+    "group_membership_meta": {
+        "fields": {
+            "group_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
+            "profile_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
+            "contribution_score": {"type": "int", "required": False, "note": ">= 0"},
+            "badges_in_group": {"type": "array", "required": False, "note": "mảng badge"},
+            "last_active_at": {"type": "datetime (ISO)", "required": False},
+            "notification_settings": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "new_post": {"type": "bool", "required": False},
+                    "new_poll": {"type": "bool", "required": False},
+                    "mention": {"type": "bool", "required": False},
+                }
+            }
+        }
+    },
+    "message_meta": {
+        "fields": {
+            "message_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
+            "rich_content": {"type": "str | null", "required": False},
+            "media": {"type": "array", "required": False, "note": "mảng {type, url, name}"},
+            "read_by": {"type": "array", "required": False, "note": "mảng {profile_id, read_at}"},
+            "reactions": {"type": "array", "required": False, "note": "mảng {profile_id, emoji}"},
+            "is_deleted": {"type": "bool", "required": False},
+            "deleted_at": {"type": "datetime (ISO)", "required": False},
+        }
+    },
+    "poll_meta": {
+        "fields": {
+            "poll_id": {"type": "str", "required": True, "note": "max 16 ký tự"},
+            "description": {"type": "str | null", "required": False},
+            "settings": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "allow_multiple_votes": {"type": "bool", "required": False},
+                    "show_results_before_close": {"type": "bool", "required": False},
+                    "anonymous_votes": {"type": "bool", "required": False},
+                }
+            },
+            "stats_cache": {
+                "type": "object",
+                "required": False,
+                "fields": {
+                    "total_votes": {"type": "int", "required": False},
+                    "cached_at": {"type": "datetime (ISO)", "required": False},
+                }
+            },
+            "closed_at": {"type": "datetime (ISO)", "required": False},
+        }
+    },
 }
 
 
@@ -232,7 +338,20 @@ st.title("ETechs Data Normalizer")
 
 collection = st.selectbox(
     "Chọn loại dữ liệu",
-    ["wallet_asset_meta", "wallet_transaction_meta", "wallet_meta", "identity_meta", "education_meta", "student_profile_meta", "user_interest_meta"],
+    [
+        "wallet_asset_meta",
+        "wallet_transaction_meta",
+        "wallet_meta",
+        "identity_meta",
+        "education_meta",
+        "student_profile_meta",
+        "user_interest_meta",
+        "post_meta",
+        "comment_meta",
+        "group_membership_meta",
+        "message_meta",
+        "poll_meta"
+    ],
 )
 
 schema = MODEL_SCHEMAS[collection]
@@ -581,7 +700,7 @@ elif collection == "student_profile_meta":
             else:
                 st.error(f"Lỗi {resp.status_code}: {resp.text}")
 
-else:
+elif collection == "user_interest_meta":
     with st.form("interest_form"):
         st.subheader("User Interest Meta")
 
@@ -613,6 +732,263 @@ else:
                 else:
                     st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
 
+                tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
+                with tab1:
+                    st.json(data)
+                with tab2:
+                    _render_schema(schema, data)
+            else:
+                st.error(f"Lỗi {resp.status_code}: {resp.text}")
+
+elif collection == "post_meta":
+    with st.form("post_form"):
+        st.subheader("Post Meta")
+        post_id = st.text_input("post_id *", "   POST_1234567890   ")
+        rich_content = st.text_area("rich_content", "  <p>Hello world</p>  ")
+        media_type = st.text_input("media type", "image")
+        media_url = st.text_input("media url", "https://img.com/1.jpg")
+        media_order = st.number_input("media order", value=1, step=1)
+        tags_raw = st.text_input("tags (phân cách bằng dấu phẩy)", "education, tech")
+        
+        st.subheader("Stats Cache")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            like_count = st.number_input("like_count", value=15, step=1)
+        with col2:
+            comment_count = st.number_input("comment_count", value=5, step=1)
+        with col3:
+            share_count = st.number_input("share_count", value=0, step=1)
+        cached_at = st.text_input("cached_at", "2026-06-19T10:00:00Z")
+        
+        st.subheader("Moderation")
+        status = st.selectbox("status", ["approved", "hidden", "removed"])
+        reviewed_by = st.text_input("reviewed_by", "admin_01")
+        reviewed_at = st.text_input("reviewed_at", "2026-06-19 10:05:00")
+
+        submitted = st.form_submit_button("Gửi & Chuẩn hóa")
+
+        if submitted:
+            tags = [t.strip() for t in tags_raw.split(",") if t.strip()]
+            payload = {
+                "post_id": post_id,
+                "rich_content": rich_content if rich_content else None,
+                "media": [{"type": media_type, "url": media_url, "order": int(media_order)}] if media_url else [],
+                "tags": tags,
+                "stats_cache": {
+                    "like_count": int(like_count),
+                    "comment_count": int(comment_count),
+                    "share_count": int(share_count),
+                    "cached_at": cached_at if cached_at else None
+                },
+                "moderation": {
+                    "status": status,
+                    "reviewed_by": reviewed_by if reviewed_by else None,
+                    "reviewed_at": reviewed_at if reviewed_at else None
+                }
+            }
+            with st.spinner("Đang chuẩn hóa..."):
+                resp = requests.post(f"{API_URL}/normalize/post_meta", json=payload, timeout=10)
+            if resp.ok:
+                data = resp.json()
+                _id = data.pop("_id", None)
+                if _id:
+                    st.success(f"✅ Đã chuẩn hóa & lưu vào MongoDB (_id: `{_id}`)")
+                else:
+                    st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
+                tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
+                with tab1:
+                    st.json(data)
+                with tab2:
+                    _render_schema(schema, data)
+            else:
+                st.error(f"Lỗi {resp.status_code}: {resp.text}")
+
+elif collection == "comment_meta":
+    with st.form("comment_form"):
+        st.subheader("Comment Meta")
+        comment_id = st.text_input("comment_id *", "COMM_123")
+        rich_content = st.text_area("rich_content", "Nice post")
+        media_type = st.text_input("media type", "image")
+        media_url = st.text_input("media url", "https://img.com/comment.jpg")
+        
+        st.subheader("Stats Cache")
+        col1, col2 = st.columns(2)
+        with col1:
+            like_count = st.number_input("like_count", value=2, step=1)
+        with col2:
+            reply_count = st.number_input("reply_count", value=0, step=1)
+        cached_at = st.text_input("cached_at", "2026-06-19T10:00:00Z")
+        
+        st.subheader("Moderation")
+        status = st.selectbox("status", ["approved", "hidden", "removed"])
+        reviewed_by = st.text_input("reviewed_by", "admin_01")
+        reviewed_at = st.text_input("reviewed_at", "2026-06-19 10:05:00")
+
+        submitted = st.form_submit_button("Gửi & Chuẩn hóa")
+
+        if submitted:
+            payload = {
+                "comment_id": comment_id,
+                "rich_content": rich_content if rich_content else None,
+                "media": [{"type": media_type, "url": media_url}] if media_url else [],
+                "stats_cache": {
+                    "like_count": int(like_count),
+                    "reply_count": int(reply_count),
+                    "cached_at": cached_at if cached_at else None
+                },
+                "edit_history": [],
+                "moderation": {
+                    "status": status,
+                    "reviewed_by": reviewed_by if reviewed_by else None,
+                    "reviewed_at": reviewed_at if reviewed_at else None
+                }
+            }
+            with st.spinner("Đang chuẩn hóa..."):
+                resp = requests.post(f"{API_URL}/normalize/comment_meta", json=payload, timeout=10)
+            if resp.ok:
+                data = resp.json()
+                _id = data.pop("_id", None)
+                if _id:
+                    st.success(f"✅ Đã chuẩn hóa & lưu vào MongoDB (_id: `{_id}`)")
+                else:
+                    st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
+                tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
+                with tab1:
+                    st.json(data)
+                with tab2:
+                    _render_schema(schema, data)
+            else:
+                st.error(f"Lỗi {resp.status_code}: {resp.text}")
+
+elif collection == "group_membership_meta":
+    with st.form("group_membership_form"):
+        st.subheader("Group Membership Meta")
+        group_id = st.text_input("group_id *", "G_123")
+        profile_id = st.text_input("profile_id *", "P_456")
+        contribution_score = st.number_input("contribution_score", value=120, min_value=0, step=1)
+        badges_raw = st.text_input("badges (phân cách bằng dấu phẩy)", "top_commenter")
+        last_active_at = st.text_input("last_active_at", "2026-06-19T10:00:00Z")
+        
+        st.subheader("Notification Settings")
+        new_post = st.checkbox("new_post", value=True)
+        new_poll = st.checkbox("new_poll", value=True)
+        mention = st.checkbox("mention", value=True)
+
+        submitted = st.form_submit_button("Gửi & Chuẩn hóa")
+
+        if submitted:
+            badges = [b.strip() for b in badges_raw.split(",") if b.strip()]
+            payload = {
+                "group_id": group_id,
+                "profile_id": profile_id,
+                "contribution_score": int(contribution_score),
+                "badges_in_group": badges,
+                "last_active_at": last_active_at if last_active_at else None,
+                "notification_settings": {
+                    "new_post": new_post,
+                    "new_poll": new_poll,
+                    "mention": mention
+                }
+            }
+            with st.spinner("Đang chuẩn hóa..."):
+                resp = requests.post(f"{API_URL}/normalize/group_membership_meta", json=payload, timeout=10)
+            if resp.ok:
+                data = resp.json()
+                _id = data.pop("_id", None)
+                if _id:
+                    st.success(f"✅ Đã chuẩn hóa & lưu vào MongoDB (_id: `{_id}`)")
+                else:
+                    st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
+                tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
+                with tab1:
+                    st.json(data)
+                with tab2:
+                    _render_schema(schema, data)
+            else:
+                st.error(f"Lỗi {resp.status_code}: {resp.text}")
+
+elif collection == "message_meta":
+    with st.form("message_form"):
+        st.subheader("Message Meta")
+        message_id = st.text_input("message_id *", "MSG_111")
+        rich_content = st.text_area("rich_content", "Hello")
+        media_type = st.text_input("media type", "file")
+        media_url = st.text_input("media url", "https://storage.com/msg.pdf")
+        media_name = st.text_input("media name", "msg.pdf")
+        is_deleted = st.checkbox("is_deleted", value=False)
+        deleted_at = st.text_input("deleted_at", "")
+
+        submitted = st.form_submit_button("Gửi & Chuẩn hóa")
+
+        if submitted:
+            payload = {
+                "message_id": message_id,
+                "rich_content": rich_content if rich_content else None,
+                "media": [{"type": media_type, "url": media_url, "name": media_name}] if media_url else [],
+                "read_by": [],
+                "reactions": [],
+                "is_deleted": is_deleted,
+                "deleted_at": deleted_at if deleted_at else None
+            }
+            with st.spinner("Đang chuẩn hóa..."):
+                resp = requests.post(f"{API_URL}/normalize/message_meta", json=payload, timeout=10)
+            if resp.ok:
+                data = resp.json()
+                _id = data.pop("_id", None)
+                if _id:
+                    st.success(f"✅ Đã chuẩn hóa & lưu vào MongoDB (_id: `{_id}`)")
+                else:
+                    st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
+                tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
+                with tab1:
+                    st.json(data)
+                with tab2:
+                    _render_schema(schema, data)
+            else:
+                st.error(f"Lỗi {resp.status_code}: {resp.text}")
+
+elif collection == "poll_meta":
+    with st.form("poll_form"):
+        st.subheader("Poll Meta")
+        poll_id = st.text_input("poll_id *", "POLL_999")
+        description = st.text_input("description", "Favorite color?")
+        
+        st.subheader("Settings")
+        allow_multiple_votes = st.checkbox("allow_multiple_votes", value=True)
+        show_results_before_close = st.checkbox("show_results_before_close", value=False)
+        anonymous_votes = st.checkbox("anonymous_votes", value=False)
+        
+        st.subheader("Stats Cache")
+        total_votes = st.number_input("total_votes", value=250, min_value=0, step=1)
+        cached_at = st.text_input("cached_at", "2026-06-19T10:00:00Z")
+        closed_at = st.text_input("closed_at", "")
+
+        submitted = st.form_submit_button("Gửi & Chuẩn hóa")
+
+        if submitted:
+            payload = {
+                "poll_id": poll_id,
+                "description": description if description else None,
+                "settings": {
+                    "allow_multiple_votes": allow_multiple_votes,
+                    "show_results_before_close": show_results_before_close,
+                    "anonymous_votes": anonymous_votes
+                },
+                "stats_cache": {
+                    "total_votes": int(total_votes),
+                    "cached_at": cached_at if cached_at else None
+                },
+                "closed_at": closed_at if closed_at else None
+            }
+            with st.spinner("Đang chuẩn hóa..."):
+                resp = requests.post(f"{API_URL}/normalize/poll_meta", json=payload, timeout=10)
+            if resp.ok:
+                data = resp.json()
+                _id = data.pop("_id", None)
+                if _id:
+                    st.success(f"✅ Đã chuẩn hóa & lưu vào MongoDB (_id: `{_id}`)")
+                else:
+                    st.success("✅ Đã chuẩn hóa (MongoDB chưa kết nối)")
                 tab1, tab2 = st.tabs(["📦 Dữ liệu đã chuẩn hóa", "🔍 Kiểm tra kiểu"])
                 with tab1:
                     st.json(data)
