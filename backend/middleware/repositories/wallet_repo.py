@@ -42,5 +42,35 @@ async def insert_user_interest_meta(db: AsyncIOMotorDatabase, data: dict) -> str
     return str(result.inserted_id)
 
 
+async def insert_post_meta(db: AsyncIOMotorDatabase, data: dict) -> str:
+    doc = {**data, "created_at": datetime.now(timezone.utc)}
+    result = await db["post_meta"].insert_one(doc)
+    return str(result.inserted_id)
+
+
+async def insert_comment_meta(db: AsyncIOMotorDatabase, data: dict) -> str:
+    doc = {**data, "created_at": datetime.now(timezone.utc)}
+    result = await db["comment_meta"].insert_one(doc)
+    return str(result.inserted_id)
+
+
+async def insert_group_membership_meta(db: AsyncIOMotorDatabase, data: dict) -> str:
+    doc = {**data, "created_at": datetime.now(timezone.utc)}
+    result = await db["group_membership_meta"].insert_one(doc)
+    return str(result.inserted_id)
+
+
+async def insert_message_meta(db: AsyncIOMotorDatabase, data: dict) -> str:
+    doc = {**data, "created_at": datetime.now(timezone.utc)}
+    result = await db["message_meta"].insert_one(doc)
+    return str(result.inserted_id)
+
+
+async def insert_poll_meta(db: AsyncIOMotorDatabase, data: dict) -> str:
+    doc = {**data, "created_at": datetime.now(timezone.utc)}
+    result = await db["poll_meta"].insert_one(doc)
+    return str(result.inserted_id)
+
+
 
 
