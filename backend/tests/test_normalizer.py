@@ -434,4 +434,160 @@ def test_user_interest_meta_missing_required():
     assert cleaned is None
 
 
+# =====================================================================
+# THỬ NGHIỆM BẢNG 8: post_meta
+# =====================================================================
+
+def test_post_meta_valid():
+    raw_data = {
+        "post_id": "  POST_1234567890 ",
+        "rich_content": "  <p>Hello world</p>  ",
+        "media": [
+            {"type": " image ", "url": " https://img.com/1.jpg ", "order": 1}
+        ],
+        "tags": ["  education  ", "  ", "tech"],
+        "stats_cache": {
+            "like_count": "15",
+            "comment_count": 5,
+            "share_count": 0,
+            "cached_at": "2026-06-19T10:00:00Z"
+        },
+        "moderation": {
+            "status": " APPROVED ",
+            "reviewed_by": " admin_01 ",
+            "reviewed_at": "2026-06-19 10:05:00"
+        }
+    }
+    cleaned = normalize_data("post_meta", raw_data)
+    assert cleaned is not None
+    assert cleaned["post_id"] == "POST_1234567890"
+    assert cleaned["rich_content"] == "<p>Hello world</p>"
+    assert cleaned["media"][0]["type"] == "image"
+    assert cleaned["media"][0]["url"] == "https://img.com/1.jpg"
+    assert cleaned["tags"] == ["education", "tech"]
+    assert cleaned["stats_cache"]["like_count"] == 15
+    assert isinstance(cleaned["stats_cache"]["cached_at"], datetime)
+    assert cleaned["moderation"]["status"] == "approved"
+    assert cleaned["moderation"]["reviewed_by"] == "admin_01"
+    assert isinstance(cleaned["moderation"]["reviewed_at"], datetime)
+
+
+def test_post_meta_invalid_moderation():
+    raw_data = {
+        "post_id": "POST_123",
+        "moderation": {
+            "status": "in_review"  # Không hợp lệ, phải thuộc approved/hidden/removed
+        }
+    }
+    cleaned = normalize_data("post_meta", raw_data)
+    assert cleaned is None
+
+
+def test_post_meta_missing_required():
+    raw_data = {
+        "rich_content": "No ID"
+    }
+    cleaned = normalize_data("post_meta", raw_data)
+    assert cleaned is None
+
+
+# =====================================================================
+# THỬ NGHIỆM BẢNG 9: comment_meta
+# =====================================================================
+
+def test_comment_meta_valid():
+    raw_data = {
+        "comment_id": "COMM_123",
+        "rich_content": "Nice post",
+        "edit_history": [
+            {"content": f"edit_{i}", "edited_at": "2026-06-19T10:00:00Z"} for i in range(15)
+        ]
+    }
+    cleaned = normalize_data("comment_meta", raw_data)
+    assert cleaned is not None
+    assert len(cleaned["edit_history"]) == 10  # Phải bị giới hạn tối đa 10 phần tử
+    assert cleaned["edit_history"][0]["content"] == "edit_5"
+    assert cleaned["edit_history"][-1]["content"] == "edit_14"
+
+
+# =====================================================================
+# THỬ NGHIỆM BẢNG 10: group_membership_meta
+# =====================================================================
+
+def test_group_membership_meta_valid():
+    raw_data = {
+        "group_id": " G_123 ",
+        "profile_id": " P_456 ",
+        "contribution_score": "120",
+        "badges_in_group": [" top_commenter ", ""],
+        "last_active_at": "2026-06-19T10:00:00Z"
+    }
+    cleaned = normalize_data("group_membership_meta", raw_data)
+    assert cleaned is not None
+    assert cleaned["group_id"] == "G_123"
+    assert cleaned["profile_id"] == "P_456"
+    assert cleaned["contribution_score"] == 120
+    assert cleaned["badges_in_group"] == ["top_commenter"]
+    assert cleaned["notification_settings"]["new_post"] is True  # Default value
+
+
+def test_group_membership_meta_negative_score():
+    raw_data = {
+        "group_id": "G_123",
+        "profile_id": "P_456",
+        "contribution_score": -10  # Điểm âm không hợp lệ
+    }
+    cleaned = normalize_data("group_membership_meta", raw_data)
+    assert cleaned is None
+
+
+# =====================================================================
+# THỬ NGHIỆM BẢNG 11: message_meta
+# =====================================================================
+
+def test_message_meta_valid():
+    raw_data = {
+        "message_id": " MSG_111 ",
+        "rich_content": "Hello",
+        "read_by": [
+            {"profile_id": " P_1 ", "read_at": "2026-06-19T10:00:00Z"}
+        ],
+        "is_deleted": "True",
+        "deleted_at": "2026-06-19T10:05:00Z"
+    }
+    cleaned = normalize_data("message_meta", raw_data)
+    assert cleaned is not None
+    assert cleaned["message_id"] == "MSG_111"
+    assert cleaned["read_by"][0]["profile_id"] == "P_1"
+    assert cleaned["is_deleted"] is True
+    assert isinstance(cleaned["deleted_at"], datetime)
+
+
+# =====================================================================
+# THỬ NGHIỆM BẢNG 12: poll_meta
+# =====================================================================
+
+def test_poll_meta_valid():
+    raw_data = {
+        "poll_id": " POLL_999 ",
+        "description": " Favorite color? ",
+        "settings": {
+            "allow_multiple_votes": "True",
+            "show_results_before_close": False
+        },
+        "stats_cache": {
+            "total_votes": "250",
+            "cached_at": "2026-06-19T10:00:00Z"
+        }
+    }
+    cleaned = normalize_data("poll_meta", raw_data)
+    assert cleaned is not None
+    assert cleaned["poll_id"] == "POLL_999"
+    assert cleaned["description"] == "Favorite color?"
+    assert cleaned["settings"]["allow_multiple_votes"] is True
+    assert cleaned["settings"]["show_results_before_close"] is False
+    assert cleaned["stats_cache"]["total_votes"] == 250
+
+
+
 
